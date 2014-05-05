@@ -1,4 +1,3 @@
-
 /*
 * Copyright (c) 2014. Jason Esposito
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,22 +16,29 @@ package com.android.yet_another_recipe_app;
 
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-public class IngredientTable {
-    // Database Table
-    //Stores the ingredients
-    public static final  String TABLE_INGREDIENTS ="ingredients";
-    public static final  String COLUMN_ID ="ingredientsID";
-    public static final  String COLUMN_NAME ="ingredientName";
-    public static final  String COLUMN_DESCRIPTION ="ingredientDescription";
+
+/**
+ * Created by Jason on 5/4/2014.
+ *
+ */
+public class RecipeTable {
+
+    public static final  String TABLE_RECIPE ="recipes";
+    public static final  String COLUMN_ID ="recipeID";
+    public static final  String COLUMN_NAME ="recipeName";
+    public static final  String COLUMN_DESCRIPTION ="recipeDescription";
+    public static final  String COLUMN_TYPE ="recipeTypeID";
 
 
     //Create table
     private static final String DATABASE_CREATE = "CREATE TABLE"
-            + TABLE_INGREDIENTS
+            + TABLE_RECIPE
             + "("
             + COLUMN_ID + " integer primary key autoincrement, "
             + COLUMN_NAME + " text not null, "
+            +COLUMN_TYPE +" integer,"
             + COLUMN_DESCRIPTION +" text  null"
+            +"FOREIGN KEY("+COLUMN_TYPE+") REFERENCES recipeType(RecipeTypeID)"
             + ");";
 
     public static void onCreate(SQLiteDatabase database) {
@@ -40,12 +46,10 @@ public class IngredientTable {
     }
     public static void onUpgrade(SQLiteDatabase database, int oldVersion,
                                  int newVersion) {
-        Log.w(IngredientTable.class.getName(), "Upgrading database from version "
+        Log.w(RecipeTable.class.getName(), "Upgrading database from version "
                 + oldVersion + " to " + newVersion
                 + ", which will destroy all old data");
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_INGREDIENTS);
+        database.execSQL("DROP TABLE IF EXISTS " + TABLE_RECIPE);
         onCreate(database);
     }
 }
-
-

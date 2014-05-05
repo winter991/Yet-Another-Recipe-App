@@ -3,27 +3,20 @@ package com.android.yet_another_recipe_app;
 /**
  * Created by Jason on 5/4/2014.
  */
-
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-
-public class StepsTable {
-    public static final  String TABLE_STEPS ="steps";
-    public static final  String COLUMN_ID ="stepID";
-    public static final  String COLUMN_DURATION="duration";
-    public static final  String COLUMN_RECIPE_ID ="recipeID";
-    public static final  String COLUMN_DESCRIPTION ="description";
+public class RecipeType {
+    public static final  String TABLE_RECIPE_TYPE ="recipeType";
+    public static final  String COLUMN_ID ="recipeTypeID";
+    public static final  String COLUMN_NAME ="recipeTypeName";
 
 
     //Create table
     private static final String DATABASE_CREATE = "CREATE TABLE"
-            + TABLE_STEPS
+            + TABLE_RECIPE_TYPE
             + "("
             + COLUMN_ID + " integer primary key autoincrement, "
-            + COLUMN_DURATION + " text not null, "
-            +COLUMN_RECIPE_ID +" integer,"
-            + COLUMN_DESCRIPTION +" text  null"
-            +"FOREIGN KEY("+COLUMN_RECIPE_ID+") REFERENCES recipeTable(RecipeID)"
+            + COLUMN_NAME + " text not null, "
             + ");";
 
     public static void onCreate(SQLiteDatabase database) {
@@ -31,10 +24,10 @@ public class StepsTable {
     }
     public static void onUpgrade(SQLiteDatabase database, int oldVersion,
                                  int newVersion) {
-        Log.w(StepsTable.class.getName(), "Upgrading database from version "
+        Log.w(RecipeType.class.getName(), "Upgrading database from version "
                 + oldVersion + " to " + newVersion
                 + ", which will destroy all old data");
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_STEPS);
+        database.execSQL("DROP TABLE IF EXISTS " + TABLE_RECIPE_TYPE);
         onCreate(database);
     }
 }
