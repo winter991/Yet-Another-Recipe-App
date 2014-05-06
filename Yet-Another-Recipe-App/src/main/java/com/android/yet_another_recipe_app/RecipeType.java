@@ -1,33 +1,30 @@
 package com.android.yet_another_recipe_app;
 
 /**
- * Created by Jason on 5/4/2014.
+ * Created by Jason on 5/5/2014.
  */
-import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 public class RecipeType {
-    public static final  String TABLE_RECIPE_TYPE ="recipeType";
-    public static final  String COLUMN_ID ="recipeTypeID";
-    public static final  String COLUMN_NAME ="recipeTypeName";
+    private int _typeID;
+    private String _description;
 
-
-    //Create table
-    private static final String DATABASE_CREATE = "CREATE TABLE"
-            + TABLE_RECIPE_TYPE
-            + "("
-            + COLUMN_ID + " integer primary key autoincrement, "
-            + COLUMN_NAME + " text not null, "
-            + ");";
-
-    public static void onCreate(SQLiteDatabase database) {
-        database.execSQL(DATABASE_CREATE);
+    public RecipeType(int id, String desc) {
+        _description=desc;
+        _typeID=id;
     }
-    public static void onUpgrade(SQLiteDatabase database, int oldVersion,
-                                 int newVersion) {
-        Log.w(RecipeType.class.getName(), "Upgrading database from version "
-                + oldVersion + " to " + newVersion
-                + ", which will destroy all old data");
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_RECIPE_TYPE);
-        onCreate(database);
+
+    public int get_typeID() {
+        return _typeID;
+    }
+
+    public void set_typeID(int _typeID) {
+        this._typeID = _typeID;
+    }
+
+    public String get_description() {
+        return _description;
+    }
+
+    public void set_description(String _description) {
+        this._description = _description;
     }
 }

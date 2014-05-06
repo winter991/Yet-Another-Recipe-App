@@ -1,4 +1,4 @@
-package com.android.yet_another_recipe_app;
+package database;
 
 /**
  * Created by Jason on 5/4/2014.
@@ -14,11 +14,11 @@ public class MeasurementsTable {
 
 
     //Create table
-    private static final String DATABASE_CREATE = "CREATE TABLE"
+    private static final String DATABASE_CREATE = "CREATE TABLE "
             + TABLE_MEASUREMENTS
             + "("
             + COLUMN_ID + " integer primary key autoincrement, "
-            + COLUMN_NAME + " text not null, "
+            + COLUMN_NAME + " text not null "
             + ");";
 
     public static void onCreate(SQLiteDatabase database) {

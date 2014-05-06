@@ -1,4 +1,4 @@
-package com.android.yet_another_recipe_app;
+package database;
 
 /**
  * Created by Jason on 5/4/2014.
@@ -16,13 +16,13 @@ public class StepsTable {
 
 
     //Create table
-    private static final String DATABASE_CREATE = "CREATE TABLE"
+    private static final String DATABASE_CREATE = "CREATE TABLE "
             + TABLE_STEPS
             + "("
             + COLUMN_ID + " integer primary key autoincrement, "
-            + COLUMN_DURATION + " text not null, "
+            + COLUMN_DURATION + " integer not null, "
             +COLUMN_RECIPE_ID +" integer,"
-            + COLUMN_DESCRIPTION +" text  null"
+            + COLUMN_DESCRIPTION +" text  null ,"
             +"FOREIGN KEY("+COLUMN_RECIPE_ID+") REFERENCES recipeTable(RecipeID)"
             + ");";
 
