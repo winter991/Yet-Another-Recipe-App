@@ -1,4 +1,4 @@
-package com.android.yet_another_recipe_app;
+package com.android.yet_another_recipe_app.objects;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;

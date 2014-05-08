@@ -1,4 +1,4 @@
-package com.android.yet_another_recipe_app;
+package com.android.yet_another_recipe_app.objects;
 
 /**
  * Created by Jason on 5/5/2014.

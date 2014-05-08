@@ -9,11 +9,14 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
-import com.android.yet_another_recipe_app.Ingredient;
-import com.android.yet_another_recipe_app.Measurement;
-import com.android.yet_another_recipe_app.RecipeType;
-import com.android.yet_another_recipe_app.Steps;
+import com.android.yet_another_recipe_app.objects.Ingredient;
+import com.android.yet_another_recipe_app.objects.Measurement;
+import com.android.yet_another_recipe_app.objects.Recipe;
+import com.android.yet_another_recipe_app.objects.RecipeIngredients;
+import com.android.yet_another_recipe_app.objects.RecipeType;
+import com.android.yet_another_recipe_app.objects.Steps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +51,7 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         MeasurementsTable.onCreate(database);
         IngredientTable.onCreate(database);
         StepsTable.onCreate(database);
+        RecipeIngredientsTable.onCreate(database);
 
     }
     // Method is called during an upgrade of the database,
@@ -101,13 +105,16 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT ingredientsID,ingredientName,ingredientDescription FROM ingredients WHERE ingredientsID ="+ingredientID;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
+
+            return new Ingredient(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
+                    , cursor.getString(cursor.getColumnIndex(COLUMN_NAME))
+                    , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
+            );
         }
-            return  new Ingredient(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                        ,cursor.getString(cursor.getColumnIndex(COLUMN_NAME))
-                        , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-                        );
+        else
+            return null;
 
     }
     //returns all saved Ingredients
@@ -117,7 +124,7 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT ingredientsID,ingredientName,ingredientDescription FROM ingredients" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
         }
         do {
@@ -136,7 +143,7 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT ingredientsID,ingredientName,ingredientDescription FROM ingredients WHERE ingredientsID IN ("+Arrays.toString(ingredientIDs)+")" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
         }
         do {
@@ -165,18 +172,17 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
     {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_NAME,measurement.get_description());
-        values.put(COLUMN_ID,measurement.get_measurementID());
+        values.put(MeasurementsTable.COLUMN_NAME,measurement.get_description());
+        values.put(MeasurementsTable.COLUMN_ID,measurement.get_measurementID());
 
-        return  db.update(MeasurementsTable.TABLE_MEASUREMENTS,values,COLUMN_ID+ " = ?", new String[] { String.valueOf(measurement.get_measurementID()) });
+        return  db.update(MeasurementsTable.TABLE_MEASUREMENTS,values,MeasurementsTable.COLUMN_ID+ " = ?", new String[] { String.valueOf(measurement.get_measurementID()) });
 
     }
 
     public int deleteMeasurement(int measurementID)
     {
         SQLiteDatabase db = this.getWritableDatabase();
-
-        return db.delete(MeasurementsTable.TABLE_MEASUREMENTS, COLUMN_ID + " =?", new String[]{String.valueOf(measurementID)});
+        return db.delete(MeasurementsTable.TABLE_MEASUREMENTS, MeasurementsTable.COLUMN_ID + " = ?", new String[]{String.valueOf(measurementID)});
     }
 
     public Measurement selectMeasurement(int measurementID)
@@ -184,30 +190,33 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT  measurementID,measurementName FROM measurements WHERE measurementID ="+measurementID;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
-        }
-        return  new Measurement(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-        );
 
+        return  new Measurement(cursor.getInt(cursor.getColumnIndex(MeasurementsTable.COLUMN_ID))
+                , cursor.getString(cursor.getColumnIndex(MeasurementsTable.COLUMN_NAME))
+        );
+        }
+        else{
+            return null;
+        }
     }
     //returns all saved Ingredients
-    public List<Measurement> selectAllMeasurements()
-    {
+    public List<Measurement> selectAllMeasurements() {
         List<Measurement> measurements = new ArrayList<Measurement>();
         SQLiteDatabase db = this.getReadableDatabase();
-        String sql ="SELECT  measurementID,measurementName FROM measurements" ;
+        String sql = "SELECT  measurementID,measurementName FROM measurements";
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount() > 0) {
             cursor.moveToFirst();
+
+            do {
+                measurements.add(new Measurement(cursor.getInt(cursor.getColumnIndex(MeasurementsTable.COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(MeasurementsTable.COLUMN_NAME))
+                        )
+                );
+            } while (cursor.moveToNext());
         }
-        do {
-            measurements.add( new Measurement(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                            , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-                    )
-            );
-        }while (cursor.moveToNext());
         return measurements;
     }
     //returns   Ingredients by  specified ID
@@ -217,15 +226,16 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT ingredientsID,ingredientName,ingredientDescription FROM ingredients WHERE ingredientsID IN ("+Arrays.toString(IDs)+")" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
+
+            do {
+                measurements.add(new Measurement(cursor.getInt(cursor.getColumnIndex(MeasurementsTable.COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(MeasurementsTable.COLUMN_NAME))
+                        )
+                );
+            } while (cursor.moveToNext());
         }
-        do {
-            measurements.add( new Measurement(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                            , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-                    )
-            );
-        }while (cursor.moveToNext());
         return measurements;
     }
     //endregion
@@ -259,32 +269,37 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT  StepID,StepDescription,duration,recipeID FROM Steps WHERE StepID ="+id;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
-            cursor.moveToFirst();
+            if (cursor != null && cursor.getCount()>0) {
+                cursor.moveToFirst();
+
+            return  new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
+                    , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
+                    , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
+                    , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
+            );
         }
-        return  new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
-                , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
-                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
-                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
-        );
+        else
+            {
+                return null;
+            }
     }
     //returns all saved Ingredients
     public List<Steps> selectAllSteps()    {
         List<Steps> steps = new ArrayList<Steps>();
         SQLiteDatabase db = this.getReadableDatabase();
-        String sql ="\"SELECT  StepID,StepDescription,duration,recipeID FROM StepID" ;
+        String sql ="SELECT  StepID,StepDescription,duration,recipeID FROM StepID" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
+            do {
+                steps.add(new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
+                                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
+                                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
+                        )
+                );
+            } while (cursor.moveToNext());
         }
-        do {
-            steps.add(new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
-                    , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
-                    , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
-                    , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
-                    )
-            );
-        }while (cursor.moveToNext());
         return steps;
     }
     //returns   Ingredients by  specified ID
@@ -294,18 +309,42 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT  StepID,StepDescription,duration,recipeID FROM StepID where StepID IN ("+Arrays.toString(IDs)+")" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
+
+            do {
+                steps.add(new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
+                                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
+                                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
+                        )
+                );
+            } while (cursor.moveToNext());
         }
-        do {
-            steps.add(new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
-                            , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
-                            , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
-                            , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
-                    )
-            );
-        }while (cursor.moveToNext());
         return steps;
+    }
+
+    private List<Steps> selectRecipeSteps(int RecipeID)
+    {
+        List<Steps> steps = new ArrayList<Steps>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql ="SELECT  * FROM steps WHERE recipeID ="+RecipeID;
+        Cursor cursor = db.rawQuery(sql, null);
+        if (cursor != null && cursor.getCount()>0) {
+            cursor.moveToFirst();
+            do {
+                steps.add(new Steps(cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(StepsTable.COLUMN_DESCRIPTION))
+                                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_RECIPE_ID))
+                                , cursor.getInt(cursor.getColumnIndex(StepsTable.COLUMN_DURATION))
+                        )
+                );
+            }while(cursor.moveToNext());
+            return steps;
+        }
+        else {
+            return null;
+        }
     }
     //endregion
 
@@ -315,23 +354,26 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(RecipeTypeTable.COLUMN_NAME,type.get_description());
-        return db.insert(RecipeTypeTable.COLUMN_NAME,null,values);
+        return db.insert(RecipeTypeTable.TABLE_RECIPE_TYPE,null,values);
     }
     public int deleteRecipeType(int id)    {
         SQLiteDatabase db = this.getWritableDatabase();
-        return  db.delete(RecipeTypeTable.TABLE_RECIPE_TYPE,COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
+        return  db.delete(RecipeTypeTable.TABLE_RECIPE_TYPE,RecipeTypeTable.COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
     }
     public RecipeType selectRecipeType(int id)    {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT  recipeTypeID,recipeTypeName FROM recipeType WHERE recipeTypeID ="+id;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
-        }
-        return  new RecipeType(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-        );
 
+            return new RecipeType(cursor.getInt(cursor.getColumnIndex(RecipeTypeTable.COLUMN_ID))
+                    , cursor.getString(cursor.getColumnIndex(RecipeTypeTable.COLUMN_NAME))
+            );
+        }
+        else {
+            return null;
+        }
     }
     //returns all saved Ingredients
     public List<RecipeType> selectAllRecipeTypes()    {
@@ -339,15 +381,16 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT  recipeTypeID,recipeTypeName FROM recipeType" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
+
+            do {
+                recipeTypes.add(new RecipeType(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
+                        )
+                );
+            } while (cursor.moveToNext());
         }
-        do {
-            recipeTypes.add( new RecipeType(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                            , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-                    )
-            );
-        }while (cursor.moveToNext());
         return recipeTypes;
     }
     //returns   Ingredients by  specified ID
@@ -356,18 +399,172 @@ public class RecipeDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String sql ="SELECT  recipeTypeID,recipeTypeName FROM recipeType WHERE recipeTypeID IN ("+Arrays.toString(IDs)+")" ;
         Cursor cursor = db.rawQuery(sql, null);
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount()>0) {
             cursor.moveToFirst();
+
+            do {
+                recipeTypes.add(new RecipeType(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
+                                , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
+                        )
+                );
+            } while (cursor.moveToNext());
         }
-        do {
-            recipeTypes.add( new RecipeType(cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                            , cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION))
-                    )
-            );
-        }while (cursor.moveToNext());
         return recipeTypes;
     }
     //endregion
+
+    //region Recipe
+    // returns 1 on failure
+
+    public long insertRecipe(Recipe recipe){
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(RecipeTable.COLUMN_NAME, recipe.get_recipeName());
+        values.put(RecipeTable.COLUMN_DESCRIPTION,recipe.get_description());
+        values.put(RecipeTable.COLUMN_TYPE,recipe.get_recipetypeID());
+        try {
+            int z=0;
+            long recipeID = db.insert(RecipeTable.TABLE_RECIPE, null, values);
+            // ASSUMPTION: The rows will be contiguous and there are no gaps. IE SET IDENTITY_INSERT is OFF!!!
+            for (RecipeIngredients i : recipe.get_recipeIngredients()) {
+                z= insertRecipeIngredient(i,recipeID);
+            }
+            for (Steps s : recipe.get_steps()) {
+                insertStep(s);
+            }
+        }
+        catch(Exception e)
+        {
+            Log.d(RecipeDatabaseHelper.class.getName(),"Exception:"+e.getMessage());
+            //TODO backout txn
+            return 1;
+        }
+        return 0;
+    }
+    public long updateRecipe(Recipe recipe) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(RecipeTable.COLUMN_NAME, recipe.get_recipeName());
+        values.put(RecipeTable.COLUMN_DESCRIPTION,recipe.get_description());
+        values.put(RecipeTable.COLUMN_TYPE,recipe.get_recipetypeID());
+        try {
+            long recipeID = db.update(RecipeTable.TABLE_RECIPE, values, RecipeTable.COLUMN_ID + " = ?", new String[]{String.valueOf(recipe.get_recipeID())});
+            // ASSUMPTION: The rows will be contiguous and there are no gaps. IE SET IDENTITY_INSERT is OFF!!!
+            for (RecipeIngredients i : recipe.get_recipeIngredients()) {
+                updateRecipeIngredient(i);
+            }
+            for (Steps s : recipe.get_steps()) {
+                updateSteps(s);
+            }
+        }
+        catch(Exception e)
+        {
+            Log.d(RecipeDatabaseHelper.class.getName(),"Exception:"+e.getMessage());
+            //TODO backout txn
+            return 1;
+        }
+        return 0;
+    }
+
+    public Recipe selectRecipe(int id)
+    {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql ="SELECT  * FROM recipes WHERE recipeID ="+id;
+        Cursor cursor = db.rawQuery(sql, null);
+        if (cursor != null && cursor.getCount()>0) {
+            cursor.moveToFirst();
+
+            ArrayList<RecipeIngredients> ingredientsList = selectRecipeIngredients(id);
+            ArrayList<Steps> stepList = (ArrayList<Steps>) selectRecipeSteps(id);
+            return new Recipe(id
+                    , cursor.getString(cursor.getColumnIndex(RecipeTable.COLUMN_NAME))
+                    ,ingredientsList
+                    ,cursor.getInt(cursor.getColumnIndex(RecipeTable.COLUMN_TYPE))
+                    ,stepList
+                    , cursor.getString(cursor.getColumnIndex(RecipeTable.COLUMN_DESCRIPTION))
+            );
+        }
+        else {
+            return null;
+        }
+    }
+    //endregion
+    //region recipeIngredient
+    public int insertRecipeIngredient(RecipeIngredients recipeIngredients,long recipeID) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(RecipeIngredientsTable.RECIPE_ID, recipeID);
+        values.put(RecipeIngredientsTable.IngredientID,recipeIngredients.get_ingredientID());
+        values.put(RecipeIngredientsTable.QUANTITY,recipeIngredients.get_quantity());
+        values.put(RecipeIngredientsTable.MeasurementID,recipeIngredients.get_measurementID());
+
+      return  (int)db.insert(RecipeIngredientsTable.TABLE_RECIPE, null, values);
+    }
+
+    private void updateRecipeIngredient(RecipeIngredients recipeIngredients) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(RecipeIngredientsTable.RECIPE_ID, recipeIngredients.get_recipeID());
+        values.put(RecipeIngredientsTable.IngredientID,recipeIngredients.get_ingredientID());
+        values.put(RecipeIngredientsTable.QUANTITY,recipeIngredients.get_quantity());
+        values.put(RecipeIngredientsTable.MeasurementID,recipeIngredients.get_measurementID());
+
+        db.update(RecipeIngredientsTable.TABLE_RECIPE, values, RecipeIngredientsTable.COLUMN_ID + " = ?", new String[]{String.valueOf(recipeIngredients.get_recipeIngredientID())});
+    }
+    private void deleteRecipeIngredient(int recipeIngredientID) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        db.delete(RecipeIngredientsTable.TABLE_RECIPE, RecipeIngredientsTable.COLUMN_ID + " = ?", new String[]{String.valueOf(recipeIngredientID)});
+    }
+    private RecipeIngredients selectRecipeIngredient(int id)
+    {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql ="SELECT  * FROM recipesIngredients WHERE recipesIngredientsID ="+id;
+        Cursor cursor = db.rawQuery(sql, null);
+        if (cursor != null && cursor.getCount()>0) {
+            cursor.moveToFirst();
+
+            return new RecipeIngredients(cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.COLUMN_ID))
+                    , cursor.getLong(cursor.getColumnIndex(RecipeIngredientsTable.RECIPE_ID))
+                    ,cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.IngredientID))
+                    ,cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.MeasurementID))
+                    ,cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.QUANTITY))
+            );
+        }
+        else {
+            return null;
+        }
+    }
+    //gets all ingredients by recipe
+    private ArrayList<RecipeIngredients> selectRecipeIngredients(int RecipeID)
+    {
+        ArrayList<RecipeIngredients> ingredientsList = new ArrayList<RecipeIngredients>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql ="SELECT  * FROM recipesIngredients WHERE recipeID ="+RecipeID;
+        Cursor cursor = db.rawQuery(sql, null);
+        if (cursor != null && cursor.getCount()>0) {
+            cursor.moveToFirst();
+            do {
+                {
+                }
+                ingredientsList.add( new RecipeIngredients(cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.COLUMN_ID))
+                        , cursor.getLong(cursor.getColumnIndex(RecipeIngredientsTable.RECIPE_ID))
+                        , cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.IngredientID))
+                        , cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.MeasurementID))
+                        , cursor.getInt(cursor.getColumnIndex(RecipeIngredientsTable.QUANTITY))
+                        )
+                );
+            }while(cursor.moveToNext());
+            return ingredientsList;
+        }
+        else {
+            return null;
+        }
+    }
+
+    //endregion
+
 
 
 
